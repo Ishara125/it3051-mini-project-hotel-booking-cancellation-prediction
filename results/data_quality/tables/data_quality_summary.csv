@@ -1,0 +1,5 @@
+Data Quality Check,Findings,Action Taken
+Missing Values,"4 columns with missing values (company: 94.31%, agent: 13.69%, country: 0.41%, children: 0.003%)",Documented reasons and nature; preserved for Member 4 preprocessing pipeline.
+Duplicate Records,"31,994 exact duplicate rows detected (26.80% of raw dataset)","Removed all 31,994 duplicate rows to prevent leakage and representation bias."
+Invalid Values,"166 zero-guest bookings, 1 negative ADR (-6.38), 1 erroneous extreme ADR (5400.00)",Removed 168 unrecoverable invalid records; retained valid zero-night and undefined categories.
+Statistical Outliers,"Outliers detected statistically across lead_time, adr, stay nights, and guest counts via IQR",Retained all legitimate extreme observations after domain review; no arbitrary capping.
