@@ -1,0 +1,9 @@
+Feature Name,Data Type,Missing Count,Min Value,Max Value,Unique Values Count,Sample Values
+total_guests,int64,0,1,55,14,"[np.int64(2), np.int64(1), np.int64(3), np.int64(4), np.int64(5)]"
+total_stay,int64,0,0,69,42,"[np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int64(4)]"
+is_family,int64,0,0,1,2,"[np.int64(0), np.int64(1)]"
+room_changed,int64,0,0,1,2,"[np.int64(0), np.int64(1)]"
+has_special_requests,int64,0,0,1,2,"[np.int64(0), np.int64(1)]"
+has_previous_cancellations,int64,0,0,1,2,"[np.int64(0), np.int64(1)]"
+has_previous_bookings,int64,0,0,1,2,"[np.int64(0), np.int64(1)]"
+is_weekend_only,int64,0,0,1,2,"[np.int64(0), np.int64(1)]"
