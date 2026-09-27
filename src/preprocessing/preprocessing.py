@@ -7,8 +7,10 @@ trained in this module.
 
 from __future__ import annotations
 
+import gzip
 import warnings
 from collections.abc import Iterable
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -276,3 +278,77 @@ def processed_preview(
         preview_matrix,
         columns=np.asarray(processed_feature_names)[:columns],
     )
+
+
+def export_processed_csv(
+    *,
+    X_train_processed,
+    X_test_processed,
+    y_train: pd.Series,
+    y_test: pd.Series,
+    processed_feature_names: np.ndarray,
+    output_path: str | Path,
+    chunk_size: int = 2_000,
+) -> Path:
+    """Export train and test transformations to one CSV file.
+
+    The matrices are written in small dense chunks so the complete sparse dataset
+    is never converted to a large dense array. ``data_split`` preserves the
+    train/test boundary, while ``source_index`` allows rows to be traced back to
+    the cleaned dataframe. The target is appended unchanged and is not processed.
+    """
+    output_path = Path(output_path)
+    is_compressed = output_path.suffixes[-2:] == [".csv", ".gz"]
+    if output_path.suffix != ".csv" and not is_compressed:
+        raise ValueError("output_path must end with '.csv' or '.csv.gz'.")
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be a positive integer.")
+    if len(y_train) != X_train_processed.shape[0]:
+        raise ValueError("Training matrix and target row counts do not match.")
+    if len(y_test) != X_test_processed.shape[0]:
+        raise ValueError("Test matrix and target row counts do not match.")
+    if X_train_processed.shape[1] != len(processed_feature_names):
+        raise ValueError("Processed feature-name count does not match the matrices.")
+    if X_test_processed.shape[1] != len(processed_feature_names):
+        raise ValueError("Train and test matrices must use the same processed features.")
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    feature_names = np.asarray(processed_feature_names)
+    first_chunk = True
+
+    if is_compressed:
+        output_file_context = gzip.open(
+            output_path,
+            mode="wt",
+            encoding="utf-8",
+            newline="",
+        )
+    else:
+        output_file_context = output_path.open(
+            mode="w",
+            encoding="utf-8",
+            newline="",
+        )
+
+    with output_file_context as output_file:
+        for split_name, matrix, target in (
+            ("train", X_train_processed, y_train),
+            ("test", X_test_processed, y_test),
+        ):
+            for start in range(0, matrix.shape[0], chunk_size):
+                stop = min(start + chunk_size, matrix.shape[0])
+                matrix_chunk = matrix[start:stop]
+                if sparse.issparse(matrix_chunk):
+                    matrix_chunk = matrix_chunk.toarray()
+                else:
+                    matrix_chunk = np.asarray(matrix_chunk)
+
+                chunk_df = pd.DataFrame(matrix_chunk, columns=feature_names)
+                target_chunk = target.iloc[start:stop]
+                chunk_df.insert(0, "source_index", target_chunk.index.to_numpy())
+                chunk_df.insert(1, "data_split", split_name)
+                chunk_df[TARGET_COLUMN] = target_chunk.to_numpy()
+                chunk_df.to_csv(output_file, index=False, header=first_chunk)
+                first_chunk = False
+
+    return output_path
