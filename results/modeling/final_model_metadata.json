@@ -1,0 +1,33 @@
+{
+  "model_name": "Gradient Boosting Classifier (Tuned)",
+  "target": "is_canceled",
+  "positive_class": 1,
+  "negative_class": 0,
+  "selection_rationale": "Selected as the final production model after multi-metric evaluation against Logistic Regression, Decision Tree, and Random Forest. Achieved the highest discrimination power (ROC-AUC 0.9152), highest test accuracy (0.8501), highest F1-score (0.7114), and an exceptionally low generalization gap (0.0062).",
+  "best_hyperparameters": {
+    "n_estimators": 200,
+    "learning_rate": 0.15,
+    "max_depth": 4,
+    "min_samples_split": 10,
+    "min_samples_leaf": 4,
+    "subsample": 0.9,
+    "max_features": null
+  },
+  "best_cv_f1": 0.7076,
+  "accuracy": 0.8501,
+  "precision": 0.7565,
+  "recall": 0.6714,
+  "f1": 0.7114,
+  "roc_auc": 0.9152,
+  "train_accuracy": 0.8562,
+  "test_accuracy": 0.8501,
+  "overfitting_gap": 0.0062,
+  "train_samples": 69782,
+  "test_samples": 17446,
+  "test_cancellations": 4802,
+  "test_cancellation_rate": 0.2752,
+  "random_state": 42,
+  "model_artifact_path": "results/modeling/final_gradient_boosting_model.joblib",
+  "preprocessor_artifact_path": "results/modeling/final_preprocessor.joblib",
+  "model_bundle_path": "results/modeling/final_model_bundle.joblib"
+}
