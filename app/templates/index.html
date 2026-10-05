@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Booking Cancellation Prediction</title>
+    <meta name="description" content="AI-powered tool to estimate hotel reservation cancellation likelihood using a Tuned Gradient Boosting model.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-container">
+            <div class="header-brand">
+                <div class="brand-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 21h18M3 7v14M21 7v14M6 3h12a3 3 0 013 3v1H3V6a3 3 0 013-3zM9 10h2M13 10h2M9 14h2M13 14h2M9 18h2M13 18h2"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="app-title">Hotel Booking Cancellation Prediction</h1>
+                    <p class="app-subtitle">Estimate the likelihood that a hotel reservation may be cancelled.</p>
+                </div>
+            </div>
+            <div class="model-badge">
+                <span class="badge-dot"></span>
+                <span>Tuned Gradient Boosting (ROC-AUC 0.9152)</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <!-- Quick Demo Scenarios Bar -->
+        <section class="demo-bar-card">
+            <div class="demo-bar-header">
+                <span class="demo-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    Live Demo Presets:
+                </span>
+                <span class="demo-hint">Click a preset below to populate authentic test-set bookings:</span>
+            </div>
+            <div class="demo-buttons-group">
+                <button type="button" class="demo-btn low-risk" id="btnDemoLow">
+                    <span class="status-indicator"></span>
+                    Low-Risk Booking (Direct, Short Lead Time)
+                </button>
+                <button type="button" class="demo-btn moderate-risk" id="btnDemoMod">
+                    <span class="status-indicator"></span>
+                    Moderate-Risk Booking (Medium Lead Time)
+                </button>
+                <button type="button" class="demo-btn high-risk" id="btnDemoHigh">
+                    <span class="status-indicator"></span>
+                    High-Risk Booking (Online TA, 187d Lead Time)
+                </button>
+            </div>
+        </section>
+
+        <!-- Main Form & Results Layout -->
+        <div class="content-grid">
+            <!-- Booking Form Column -->
+            <div class="form-column">
+                <form id="bookingForm" class="prediction-form" novalidate>
+                    <!-- Error Notification Alert -->
+                    <div id="errorAlert" class="alert alert-error" style="display: none;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <div id="errorMessageText">Please check your inputs and try again.</div>
+                    </div>
+
+                    <!-- 1. Booking Details -->
+                    <div class="form-section">
+                        <div class="section-title">
+                            <span class="section-number">1</span>
+                            <h3>Booking Details</h3>
+                        </div>
+                        <div class="fields-grid grid-2">
+                            <div class="form-group">
+                                <label for="hotel">Hotel Type <span class="req">*</span></label>
+                                <select id="hotel" name="hotel" required>
+                                    <option value="City Hotel" selected>City Hotel</option>
+                                    <option value="Resort Hotel">Resort Hotel</option>
+                                </select>
+                                <span class="field-hint">Urban hotel or luxury resort property.</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="lead_time">Lead Time (Days) <span class="req">*</span></label>
+                                <input type="number" id="lead_time" name="lead_time" min="0" max="1000" value="30" required>
+                                <span class="field-hint">Number of days between reservation and arrival.</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="arrival_date">Arrival Date <span class="req">*</span></label>
+                                <input type="date" id="arrival_date" name="arrival_date" value="2017-06-15" required>
+                                <span class="field-hint">Select planned check-in date.</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="adr">Average Daily Rate (ADR) € <span class="req">*</span></label>
+                                <input type="number" id="adr" name="adr" min="0" max="5000" step="0.01" value="110.00" required>
+                                <span class="field-hint">Average room rate per night in Euros.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Guest Details -->
+                    <div class="form-section">
+                        <div class="section-title">
+                            <span class="section-number">2</span>
+                            <h3>Guest Details</h3>
+                        </div>
+                        <div class="fields-grid grid-4">
+                            <div class="form-group">
+                                <label for="adults">Adults <span class="req">*</span></label>
+                                <input type="number" id="adults" name="adults" min="0" max="20" value="2" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="children">Children</label>
+                                <input type="number" id="children" name="children" min="0" max="10" value="0">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="babies">Babies</label>
+                                <input type="number" id="babies" name="babies" min="0" max="10" value="0">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="country">Country of Origin <span class="req">*</span></label>
+                                <select id="country" name="country" required>
+                                    <option value="PRT" selected>PRT - Portugal</option>
+                                    <option value="GBR">GBR - United Kingdom</option>
+                                    <option value="FRA">FRA - France</option>
+                                    <option value="ESP">ESP - Spain</option>
+                                    <option value="DEU">DEU - Germany</option>
+                                    <option value="ITA">ITA - Italy</option>
+                                    <option value="IRL">IRL - Ireland</option>
+                                    <option value="BEL">BEL - Belgium</option>
+                                    <option value="BRA">BRA - Brazil</option>
+                                    <option value="NLD">NLD - Netherlands</option>
+                                    <option value="USA">USA - United States</option>
+                                    <option value="CHE">CHE - Switzerland</option>
+                                    <option value="AUT">AUT - Austria</option>
+                                    <option value="CN">CN - China</option>
+                                    <option value="SWE">SWE - Sweden</option>
+                                    <option value="POL">POL - Poland</option>
+                                    <option value="ISR">ISR - Israel</option>
+                                    <option value="RUS">RUS - Russia</option>
+                                    <option value="NOR">NOR - Norway</option>
+                                    <option value="ROU">ROU - Romania</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Stay Details -->
+                    <div class="form-section">
+                        <div class="section-title">
+                            <span class="section-number">3</span>
+                            <h3>Stay Details</h3>
+                        </div>
+                        <div class="fields-grid grid-3">
+                            <div class="form-group">
+                                <label for="stays_in_weekend_nights">Weekend Nights</label>
+                                <input type="number" id="stays_in_weekend_nights" name="stays_in_weekend_nights" min="0" max="30" value="1">
+                                <span class="field-hint">Friday / Saturday nights.</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="stays_in_week_nights">Week Nights</label>
+                                <input type="number" id="stays_in_week_nights" name="stays_in_week_nights" min="0" max="60" value="2">
+                                <span class="field-hint">Monday to Thursday nights.</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="required_car_parking_spaces">Parking Spaces</label>
+                                <input type="number" id="required_car_parking_spaces" name="required_car_parking_spaces" min="0" max="8" value="0">
+                                <span class="field-hint">Number of parking spots requested.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Reservation History -->
+                    <div class="form-section">
+                        <div class="section-title">
+                            <span class="section-number">4</span>
+                            <h3>Reservation History</h3>
+                        </div>
+                        <div class="fields-grid grid-3">
+                            <div class="form-group">
+                                <label for="is_repeated_guest">Repeated Guest?</label>
+                                <select id="is_repeated_guest" name="is_repeated_guest">
+                                    <option value="0" selected>No (New Guest)</option>
+                                    <option value="1">Yes (Returning Guest)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="previous_cancellations">Previous Cancellations</label>
+                                <input type="number" id="previous_cancellations" name="previous_cancellations" min="0" max="30" value="0">
+                                <span class="field-hint">Prior bookings cancelled by guest.</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="previous_bookings_not_canceled">Previous Honored Bookings</label>
+                                <input type="number" id="previous_bookings_not_canceled" name="previous_bookings_not_canceled" min="0" max="100" value="0">
+                                <span class="field-hint">Prior bookings completed successfully.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5. Additional Booking Information -->
+                    <div class="form-section">
+                        <div class="section-title">
+                            <span class="section-number">5</span>
+                            <h3>Additional Booking Information</h3>
+                        </div>
+                        <div class="fields-grid grid-3">
+                            <div class="form-group">
+                                <label for="market_segment">Market Segment <span class="req">*</span></label>
+                                <select id="market_segment" name="market_segment" required>
+                                    <option value="Online TA" selected>Online Travel Agent (Online TA)</option>
+                                    <option value="Offline TA/TO">Offline Travel Agent / Tour Operator</option>
+                                    <option value="Direct">Direct Booking</option>
+                                    <option value="Corporate">Corporate</option>
+                                    <option value="Groups">Groups</option>
+                                    <option value="Complementary">Complementary</option>
+                                    <option value="Aviation">Aviation</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="distribution_channel">Distribution Channel <span class="req">*</span></label>
+                                <select id="distribution_channel" name="distribution_channel" required>
+                                    <option value="TA/TO" selected>TA/TO (Travel Agent / Tour Operator)</option>
+                                    <option value="Direct">Direct</option>
+                                    <option value="Corporate">Corporate</option>
+                                    <option value="GDS">Global Distribution System (GDS)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="deposit_type">Deposit Policy <span class="req">*</span></label>
+                                <select id="deposit_type" name="deposit_type" required>
+                                    <option value="No Deposit" selected>No Deposit</option>
+                                    <option value="Non Refund">Non Refundable</option>
+                                    <option value="Refundable">Refundable</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="customer_type">Customer Type <span class="req">*</span></label>
+                                <select id="customer_type" name="customer_type" required>
+                                    <option value="Transient" selected>Transient</option>
+                                    <option value="Transient-Party">Transient-Party</option>
+                                    <option value="Contract">Contract</option>
+                                    <option value="Group">Group</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="reserved_room_type">Reserved Room Type <span class="req">*</span></label>
+                                <select id="reserved_room_type" name="reserved_room_type" required>
+                                    <option value="A" selected>Room Type A</option>
+                                    <option value="B">Room Type B</option>
+                                    <option value="C">Room Type C</option>
+                                    <option value="D">Room Type D</option>
+                                    <option value="E">Room Type E</option>
+                                    <option value="F">Room Type F</option>
+                                    <option value="G">Room Type G</option>
+                                    <option value="H">Room Type H</option>
+                                    <option value="L">Room Type L</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="assigned_room_type">Assigned Room Type <span class="req">*</span></label>
+                                <select id="assigned_room_type" name="assigned_room_type" required>
+                                    <option value="A" selected>Room Type A</option>
+                                    <option value="B">Room Type B</option>
+                                    <option value="C">Room Type C</option>
+                                    <option value="D">Room Type D</option>
+                                    <option value="E">Room Type E</option>
+                                    <option value="F">Room Type F</option>
+                                    <option value="G">Room Type G</option>
+                                    <option value="H">Room Type H</option>
+                                    <option value="I">Room Type I</option>
+                                    <option value="K">Room Type K</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="meal">Meal Plan</label>
+                                <select id="meal" name="meal">
+                                    <option value="BB" selected>Bed & Breakfast (BB)</option>
+                                    <option value="HB">Half Board (HB)</option>
+                                    <option value="FB">Full Board (FB)</option>
+                                    <option value="SC">Self Catering (SC)</option>
+                                    <option value="Undefined">Undefined</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="booking_changes">Booking Changes</label>
+                                <input type="number" id="booking_changes" name="booking_changes" min="0" max="25" value="0">
+                                <span class="field-hint">Number of amendments made to reservation.</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="total_of_special_requests">Special Requests</label>
+                                <input type="number" id="total_of_special_requests" name="total_of_special_requests" min="0" max="5" value="0">
+                                <span class="field-hint">e.g. high floor, twin beds, quiet room.</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="days_in_waiting_list">Days in Waiting List</label>
+                                <input type="number" id="days_in_waiting_list" name="days_in_waiting_list" min="0" max="400" value="0">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="agent">Travel Agent ID (Optional)</label>
+                                <input type="text" id="agent" name="agent" placeholder="e.g. 9 or leave blank">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="company">Company ID (Optional)</label>
+                                <input type="text" id="company" name="company" placeholder="e.g. 40 or leave blank">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="form-actions">
+                        <button type="submit" id="btnPredict" class="btn btn-primary">
+                            <span class="btn-text">Predict Cancellation Risk</span>
+                            <span class="spinner" style="display: none;"></span>
+                        </button>
+                        <button type="button" id="btnReset" class="btn btn-secondary">
+                            Reset Form
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Prediction Result Column -->
+            <div class="result-column">
+                <div class="sticky-panel">
+                    <div id="resultCard" class="card result-card empty-state">
+                        <!-- Empty Initial State -->
+                        <div id="emptyResultContent" class="empty-placeholder">
+                            <div class="placeholder-icon">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </div>
+                            <h3>No Prediction Yet</h3>
+                            <p>Fill out the booking details or select a demo preset above, then click <strong>Predict Cancellation Risk</strong>.</p>
+                        </div>
+
+                        <!-- Active Prediction Content -->
+                        <div id="activeResultContent" style="display: none;">
+                            <div class="result-header">
+                                <span class="result-kicker">Evaluation Outcome</span>
+                                <div id="riskBadge" class="risk-badge risk-low">Low Risk</div>
+                            </div>
+
+                            <div class="prediction-main">
+                                <div class="prediction-label-title">Prediction</div>
+                                <div id="predictionHeadline" class="prediction-headline text-not-cancel">
+                                    LIKELY NOT TO CANCEL
+                                </div>
+                            </div>
+
+                            <!-- Probability Bars -->
+                            <div class="probability-section">
+                                <div class="prob-row">
+                                    <span class="prob-label">Cancellation Probability</span>
+                                    <span id="probCancelVal" class="prob-val">0.0%</span>
+                                </div>
+                                <div class="meter-bar">
+                                    <div id="probCancelMeter" class="meter-fill cancel-fill" style="width: 0%;"></div>
+                                </div>
+
+                                <div class="prob-row secondary-prob">
+                                    <span class="prob-label">Honored (Not Cancelled) Probability</span>
+                                    <span id="probNotCancelVal" class="prob-val">100.0%</span>
+                                </div>
+                                <div class="meter-bar small-bar">
+                                    <div id="probNotCancelMeter" class="meter-fill not-cancel-fill" style="width: 100%;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Key Diagnostic Summary -->
+                            <div class="diagnostic-box">
+                                <div class="diag-item">
+                                    <span class="diag-label">Model Pipeline</span>
+                                    <span class="diag-value">Tuned Gradient Boosting</span>
+                                </div>
+                                <div class="diag-item">
+                                    <span class="diag-label">Input Preprocessor</span>
+                                    <span class="diag-value">899 Processed Features</span>
+                                </div>
+                                <div class="diag-item">
+                                    <span class="diag-label">Leakage Status</span>
+                                    <span class="diag-value safe-status">100% Excluded</span>
+                                </div>
+                            </div>
+
+                            <!-- Business Advisory Note -->
+                            <div class="advisory-note">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                </svg>
+                                <span>This prediction is based on historical booking patterns and should support, not replace, business decision-making.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="app-footer">
+        <p>IT3051 Hotel Booking Cancellation Prediction &bull; Tuned Gradient Boosting Champion Pipeline</p>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
