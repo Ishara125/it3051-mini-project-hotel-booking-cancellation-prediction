@@ -99,3 +99,84 @@ All experimental records are preserved in [`results/modeling/model_comparison.cs
 ### Evaluation 2 Study & Viva Resources
 - Group Study Guide (20 Core Questions): [`results/modeling/evaluation2_viva_notes.md`](results/modeling/evaluation2_viva_notes.md)
 - Member 3 Random Forest Guide (Ensemble Concepts & 15 Questions): [`results/modeling/member3_random_forest_viva.md`](results/modeling/member3_random_forest_viva.md)
+
+---
+
+## Final Prediction System
+
+An interactive, reliable, and user-friendly web application developed for live stakeholder demonstration, built directly on top of the saved champion model.
+
+- **Final Model**: Tuned Gradient Boosting Classifier (`results/modeling/final_gradient_boosting_model.joblib`)
+- **Fitted Preprocessor**: Scikit-learn ColumnTransformer (`results/modeling/final_preprocessor.joblib`)
+- **Combined Bundle**: Single-load package (`results/modeling/final_model_bundle.joblib`)
+- **Backend Architecture**: Python Flask service exposing `/` (Web UI), `/predict` (Inference API), `/health` (Service diagnostics), and `/api/demo-cases` (Pre-calculated test set presets).
+- **Frontend Architecture**: Clean HTML5 semantic layout styled with custom responsive Vanilla CSS and interactive AJAX JavaScript. No external UI build steps required.
+- **Safety Guarantee**: The production pipeline **never calls `fit()`** or retrains the model. Leakage columns (`reservation_status`, `reservation_status_date`) and the target variable (`is_canceled`) are strictly prohibited and excluded from user inputs.
+
+### System Architecture
+
+```mermaid
+flowchart TD
+    A[Hotel Booking Form / API Client] -->|Raw Booking Input| B[Flask Backend /predict]
+    B -->|Schema & Range Verification| C[Input Validation Layer]
+    C -->|One-row DataFrame| D[Deterministic Feature Engineering]
+    D -->|37 Clean Predictor Features| E[Saved Preprocessor ColumnTransformer]
+    E -->|899 Transformed Features| F[Tuned Gradient Boosting Model]
+    F -->|predict & predict_proba| G[Prediction Result & Risk Calibration]
+    G -->|JSON / Rendered Card| H[User Interface]
+```
+
+### Prediction Flow
+1. **User Input**: 26 original, domain-level reservation parameters are entered across 5 intuitive form sections via dropdowns, date pickers, and numeric fields (or loaded instantly using the 1-click Demo Presets).
+2. **Validation**: Enforces non-negative bounds, minimum guest counts ($\ge 1$), valid categories, and rejects leakage columns.
+3. **Feature Engineering**: Deterministically derives the 8 domain features:
+   - `total_guests = adults + children + babies`
+   - `total_stay = stays_in_week_nights + stays_in_weekend_nights`
+   - `is_family = (children + babies > 0)`
+   - `room_changed = (reserved_room_type != assigned_room_type)`
+   - `has_special_requests = (total_of_special_requests > 0)`
+   - `has_previous_cancellations = (previous_cancellations > 0)`
+   - `has_previous_bookings = (previous_bookings_not_canceled > 0)`
+   - `is_weekend_only = (stays_in_weekend_nights > 0 and stays_in_week_nights == 0)`
+4. **Transformation**: The pre-fitted `ColumnTransformer` imputes missing values and encodes categorical features into exactly **899 features**.
+5. **Inference**: Gradient Boosting model outputs binary prediction (0: Honored / 1: Cancelled) and class probabilities.
+6. **Presentation**: The UI displays the outcome badge (`LIKELY NOT TO CANCEL` or `LIKELY TO CANCEL`), probability meters, risk classification tier, and a business advisory note.
+
+---
+
+## Running the Application
+
+### 1. Install Dependencies
+Ensure you are in the project root:
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+### 2. Start the Web Server
+Launch the Flask application:
+
+```powershell
+python app/app.py
+```
+
+Or via module syntax:
+
+```powershell
+python -m app.app
+```
+
+### 3. Open in Browser
+Visit the local server address:
+
+```text
+http://127.0.0.1:5000
+```
+
+### 4. Run Automated Test Suite
+Execute the full test suite covering validation, inference, feature engineering, and backend endpoints:
+
+```powershell
+python -m pytest tests -v
+```
+
