@@ -44,12 +44,21 @@ def valid_payload():
 
 
 def test_homepage_serves_html(client):
-    """GET / serves the prediction web form."""
+    """GET / serves the landing page with key content."""
     response = client.get("/")
     assert response.status_code == 200
     html = response.data.decode("utf-8")
-    assert "Hotel Booking Cancellation Prediction" in html
+    assert "Hotel" in html
+    assert "Cancellation" in html
+
+
+def test_predictor_page_serves_html(client):
+    """GET /predictor serves the prediction form page."""
+    response = client.get("/predictor")
+    assert response.status_code == 200
+    html = response.data.decode("utf-8")
     assert "bookingForm" in html
+    assert "Hotel Booking Cancellation Prediction" in html
 
 
 def test_health_endpoint(client):
