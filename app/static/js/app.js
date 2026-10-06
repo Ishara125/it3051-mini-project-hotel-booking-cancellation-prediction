@@ -1,287 +1,302 @@
 /**
- * Hotel Booking Cancellation Prediction - Frontend Interaction Handler
+ * Hotel Booking Cancellation Prediction — Predictor Page Interactions
+ * IT3051 Fundamentals of Data Mining
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('bookingForm');
-    const btnPredict = document.getElementById('btnPredict');
-    const btnText = btnPredict.querySelector('.btn-text');
-    const spinner = btnPredict.querySelector('.spinner');
-    const btnReset = document.getElementById('btnReset');
-    const errorAlert = document.getElementById('errorAlert');
-    const errorMessageText = document.getElementById('errorMessageText');
+  /* ---- Element references ---- */
+  const form          = document.getElementById('bookingForm');
+  const btnPredict    = document.getElementById('btnPredict');
+  const btnText       = btnPredict.querySelector('.btn-text');
+  const btnLoading    = btnPredict.querySelector('.btn-loading');
+  const btnReset      = document.getElementById('btnReset');
+  const errorAlert    = document.getElementById('errorAlert');
+  const errorMsgText  = document.getElementById('errorMessageText');
 
-    const emptyResultContent = document.getElementById('emptyResultContent');
-    const activeResultContent = document.getElementById('activeResultContent');
-    const riskBadge = document.getElementById('riskBadge');
-    const predictionHeadline = document.getElementById('predictionHeadline');
-    const probCancelVal = document.getElementById('probCancelVal');
-    const probCancelMeter = document.getElementById('probCancelMeter');
-    const probNotCancelVal = document.getElementById('probNotCancelVal');
-    const probNotCancelMeter = document.getElementById('probNotCancelMeter');
+  const emptyState    = document.getElementById('emptyState');
+  const activeResult  = document.getElementById('activeResult');
+  const riskBanner    = document.getElementById('riskBanner');
+  const riskLevel     = document.getElementById('riskLevel');
+  const riskVerdict   = document.getElementById('riskVerdict');
+  const probCancelVal = document.getElementById('probCancelVal');
+  const probCancelMeter    = document.getElementById('probCancelMeter');
+  const probCancelTrack    = document.getElementById('probCancelTrack');
+  const probNotCancelVal   = document.getElementById('probNotCancelVal');
+  const probNotCancelMeter = document.getElementById('probNotCancelMeter');
+  const probNotCancelTrack = document.getElementById('probNotCancelTrack');
+  const resultContext = document.getElementById('resultContext');
 
-    // Demo Buttons
-    const btnDemoLow = document.getElementById('btnDemoLow');
-    const btnDemoMod = document.getElementById('btnDemoMod');
-    const btnDemoHigh = document.getElementById('btnDemoHigh');
+  const btnDemoLow  = document.getElementById('btnDemoLow');
+  const btnDemoMod  = document.getElementById('btnDemoMod');
+  const btnDemoHigh = document.getElementById('btnDemoHigh');
 
-    let demoCasesCache = null;
+  let demoCasesCache = null;
 
-    // Load Demo Cases from Backend
-    async function loadDemoCases() {
-        try {
-            const resp = await fetch('/api/demo-cases');
-            if (resp.ok) {
-                demoCasesCache = await resp.json();
-            }
-        } catch (err) {
-            console.warn('Could not pre-fetch demo cases:', err);
-        }
+  /* ---- Load demo cases from backend ---- */
+  async function loadDemoCases() {
+    try {
+      const resp = await fetch('/api/demo-cases');
+      if (resp.ok) {
+        demoCasesCache = await resp.json();
+      }
+    } catch (err) {
+      console.warn('Could not pre-fetch demo cases:', err);
     }
-    loadDemoCases();
+  }
+  loadDemoCases();
 
-    // Populate Form from Demo Case
-    function populateForm(inputs) {
-        if (!inputs) return;
+  /* ---- Populate form from a demo case object ---- */
+  function populateForm(inputs) {
+    if (!inputs) return;
+    hideError();
+    clearFieldErrors();
 
-        // Clear previous error
-        hideError();
-
-        for (const [key, value] of Object.entries(inputs)) {
-            const field = form.elements[key];
-            if (field) {
-                if (value === null || value === undefined) {
-                    field.value = '';
-                } else {
-                    field.value = value;
-                }
-            }
-        }
-
-        // Construct arrival_date if year, month, day are provided
-        if (inputs.arrival_date_year && inputs.arrival_date_month && inputs.arrival_date_day_of_month) {
-            const monthNames = ["January", "February", "March", "April", "May", "June",
-                "July", "August", "September", "October", "November", "December"];
-            const monthIdx = monthNames.indexOf(inputs.arrival_date_month);
-            if (monthIdx >= 0) {
-                const yyyy = inputs.arrival_date_year;
-                const mm = String(monthIdx + 1).padStart(2, '0');
-                const dd = String(inputs.arrival_date_day_of_month).padStart(2, '0');
-                const dateField = form.elements['arrival_date'];
-                if (dateField) {
-                    dateField.value = `${yyyy}-${mm}-${dd}`;
-                }
-            }
-        }
-
-        // Trigger prediction immediately for demo convenience
-        submitPrediction();
+    for (const [key, value] of Object.entries(inputs)) {
+      const field = form.elements[key];
+      if (field) {
+        field.value = (value === null || value === undefined) ? '' : value;
+      }
     }
 
-    // Attach Demo Button Handlers
-    btnDemoLow.addEventListener('click', () => {
-        if (demoCasesCache && demoCasesCache[0]) {
-            populateForm(demoCasesCache[0].raw_booking_inputs);
-        } else {
-            populateForm({
-                hotel: 'City Hotel',
-                lead_time: 0,
-                arrival_date_year: 2015,
-                arrival_date_month: 'October',
-                arrival_date_day_of_month: 6,
-                stays_in_weekend_nights: 0,
-                stays_in_week_nights: 1,
-                adults: 2,
-                children: 0,
-                babies: 0,
-                meal: 'BB',
-                country: 'PRT',
-                market_segment: 'Online TA',
-                distribution_channel: 'TA/TO',
-                is_repeated_guest: 0,
-                previous_cancellations: 0,
-                previous_bookings_not_canceled: 0,
-                reserved_room_type: 'D',
-                assigned_room_type: 'A',
-                booking_changes: 0,
-                deposit_type: 'No Deposit',
-                agent: 9.0,
-                adr: 136.0,
-                required_car_parking_spaces: 0,
-                total_of_special_requests: 1,
-                days_in_waiting_list: 0,
-                customer_type: 'Contract'
-            });
+    // Construct arrival_date from year/month/day if provided
+    if (inputs.arrival_date_year && inputs.arrival_date_month && inputs.arrival_date_day_of_month) {
+      const monthNames = [
+        'January','February','March','April','May','June',
+        'July','August','September','October','November','December'
+      ];
+      const monthIdx = monthNames.indexOf(inputs.arrival_date_month);
+      if (monthIdx >= 0) {
+        const yyyy = inputs.arrival_date_year;
+        const mm   = String(monthIdx + 1).padStart(2, '0');
+        const dd   = String(inputs.arrival_date_day_of_month).padStart(2, '0');
+        const dateField = form.elements['arrival_date'];
+        if (dateField) dateField.value = `${yyyy}-${mm}-${dd}`;
+      }
+    }
+
+    // Auto-submit for demo convenience
+    submitPrediction();
+  }
+
+  /* ---- Demo button handlers ---- */
+  btnDemoLow.addEventListener('click', () => {
+    if (demoCasesCache && demoCasesCache[0]) {
+      populateForm(demoCasesCache[0].raw_booking_inputs);
+    } else {
+      populateForm({
+        hotel: 'City Hotel', lead_time: 0,
+        arrival_date_year: 2015, arrival_date_month: 'October', arrival_date_day_of_month: 6,
+        stays_in_weekend_nights: 0, stays_in_week_nights: 1,
+        adults: 2, children: 0, babies: 0, meal: 'BB', country: 'PRT',
+        market_segment: 'Online TA', distribution_channel: 'TA/TO',
+        is_repeated_guest: 0, previous_cancellations: 0, previous_bookings_not_canceled: 0,
+        reserved_room_type: 'D', assigned_room_type: 'A',
+        booking_changes: 0, deposit_type: 'No Deposit',
+        agent: 9.0, adr: 136.0,
+        required_car_parking_spaces: 0, total_of_special_requests: 1,
+        days_in_waiting_list: 0, customer_type: 'Contract'
+      });
+    }
+  });
+
+  btnDemoMod.addEventListener('click', () => {
+    if (demoCasesCache && demoCasesCache[2]) {
+      populateForm(demoCasesCache[2].raw_booking_inputs);
+    } else {
+      populateForm({
+        hotel: 'City Hotel', lead_time: 59,
+        arrival_date_year: 2017, arrival_date_month: 'May', arrival_date_day_of_month: 26,
+        stays_in_weekend_nights: 1, stays_in_week_nights: 2,
+        adults: 2, children: 0, babies: 0, meal: 'BB', country: 'AUT',
+        market_segment: 'Online TA', distribution_channel: 'TA/TO',
+        is_repeated_guest: 0, previous_cancellations: 0, previous_bookings_not_canceled: 0,
+        reserved_room_type: 'A', assigned_room_type: 'A',
+        booking_changes: 0, deposit_type: 'No Deposit',
+        adr: 102.56,
+        required_car_parking_spaces: 0, total_of_special_requests: 0,
+        days_in_waiting_list: 0, customer_type: 'Transient'
+      });
+    }
+  });
+
+  btnDemoHigh.addEventListener('click', () => {
+    if (demoCasesCache && demoCasesCache[1]) {
+      populateForm(demoCasesCache[1].raw_booking_inputs);
+    } else {
+      populateForm({
+        hotel: 'City Hotel', lead_time: 187,
+        arrival_date_year: 2017, arrival_date_month: 'July', arrival_date_day_of_month: 17,
+        stays_in_weekend_nights: 1, stays_in_week_nights: 3,
+        adults: 2, children: 0, babies: 0, meal: 'BB', country: 'PRT',
+        market_segment: 'Online TA', distribution_channel: 'TA/TO',
+        is_repeated_guest: 0, previous_cancellations: 0, previous_bookings_not_canceled: 0,
+        reserved_room_type: 'D', assigned_room_type: 'D',
+        booking_changes: 0, deposit_type: 'No Deposit',
+        adr: 105.3,
+        required_car_parking_spaces: 0, total_of_special_requests: 0,
+        days_in_waiting_list: 0, customer_type: 'Transient'
+      });
+    }
+  });
+
+  /* ---- Form submit ---- */
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    submitPrediction();
+  });
+
+  async function submitPrediction() {
+    hideError();
+    clearFieldErrors();
+    setLoading(true);
+
+    const formData = new FormData(form);
+    const payload = {};
+    for (const [key, value] of formData.entries()) {
+      payload[key] = value.trim();
+    }
+
+    try {
+      const response = await fetch('/predict', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        handleError(result);
+        return;
+      }
+
+      renderPrediction(result.data);
+
+    } catch (err) {
+      console.error('Prediction request failed:', err);
+      showError('Unable to connect to the prediction server. Please ensure the backend is running.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /* ---- Render prediction result ---- */
+  function renderPrediction(data) {
+    emptyState.style.display = 'none';
+    activeResult.style.display = 'block';
+
+    const cancelPct    = (data.cancellation_probability * 100).toFixed(1);
+    const notCancelPct = (data.non_cancellation_probability * 100).toFixed(1);
+
+    // Risk banner
+    const riskClass = data.risk_badge || 'risk-low';
+    riskBanner.className = `risk-banner ${riskClass}`;
+    riskLevel.textContent = `${(data.risk_level || 'LOW').toUpperCase()} RISK`;
+
+    if (data.prediction === 1) {
+      riskVerdict.textContent = 'Likely to Cancel';
+    } else {
+      riskVerdict.textContent = 'Likely Not to Cancel';
+    }
+
+    // Probabilities
+    probCancelVal.textContent = `${cancelPct}%`;
+    probCancelMeter.style.width = `${cancelPct}%`;
+    probCancelTrack.setAttribute('aria-valuenow', cancelPct);
+
+    probNotCancelVal.textContent = `${notCancelPct}%`;
+    probNotCancelMeter.style.width = `${notCancelPct}%`;
+    probNotCancelTrack.setAttribute('aria-valuenow', notCancelPct);
+
+    // Contextual message
+    resultContext.textContent = getContextMessage(data.prediction, parseFloat(cancelPct));
+
+    // Scroll result panel into view on mobile
+    if (window.innerWidth < 1024) {
+      setTimeout(() => {
+        document.querySelector('.result-card').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 100);
+    }
+  }
+
+  function getContextMessage(prediction, cancelPct) {
+    if (prediction === 1) {
+      if (cancelPct >= 70) {
+        return 'This booking has a relatively high predicted cancellation probability based on patterns learned from historical reservations. Consider reviewing the booking with additional attention.';
+      }
+      return 'This booking is predicted to be at elevated cancellation risk based on patterns learned from historical data. This is an estimate and should inform, not determine, decision-making.';
+    } else {
+      if (cancelPct < 20) {
+        return 'This booking has a relatively low predicted cancellation probability based on patterns learned from historical reservations.';
+      }
+      return 'This booking is predicted to likely be honoured, though some cancellation probability remains. This estimate is based on historical booking patterns.';
+    }
+  }
+
+  /* ---- Error handling ---- */
+  function handleError(result) {
+    const message = result.message || 'An error occurred. Please check your inputs.';
+    const errors  = result.errors  || {};
+
+    showError(message);
+
+    // Highlight specific fields if the backend identifies them
+    Object.keys(errors).forEach(fieldName => {
+      const field = form.elements[fieldName];
+      if (field) {
+        const group = field.closest('.form-group');
+        if (group) {
+          group.classList.add('has-error');
+          const errEl = group.querySelector('.field-error');
+          if (errEl) {
+            errEl.textContent = errors[fieldName];
+            errEl.style.display = 'block';
+          }
         }
+      }
     });
+  }
 
-    btnDemoMod.addEventListener('click', () => {
-        if (demoCasesCache && demoCasesCache[2]) {
-            populateForm(demoCasesCache[2].raw_booking_inputs);
-        } else {
-            populateForm({
-                hotel: 'City Hotel',
-                lead_time: 59,
-                arrival_date_year: 2017,
-                arrival_date_month: 'May',
-                arrival_date_day_of_month: 26,
-                stays_in_weekend_nights: 1,
-                stays_in_week_nights: 2,
-                adults: 2,
-                children: 0,
-                babies: 0,
-                meal: 'BB',
-                country: 'AUT',
-                market_segment: 'Online TA',
-                distribution_channel: 'TA/TO',
-                is_repeated_guest: 0,
-                previous_cancellations: 0,
-                previous_bookings_not_canceled: 0,
-                reserved_room_type: 'A',
-                assigned_room_type: 'A',
-                booking_changes: 0,
-                deposit_type: 'No Deposit',
-                adr: 102.56,
-                required_car_parking_spaces: 0,
-                total_of_special_requests: 0,
-                days_in_waiting_list: 0,
-                customer_type: 'Transient'
-            });
-        }
+  function showError(message) {
+    errorMsgText.textContent = message;
+    errorAlert.classList.add('visible');
+    errorAlert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function hideError() {
+    errorAlert.classList.remove('visible');
+  }
+
+  function clearFieldErrors() {
+    form.querySelectorAll('.form-group.has-error').forEach(group => {
+      group.classList.remove('has-error');
+      const errEl = group.querySelector('.field-error');
+      if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
     });
+  }
 
-    btnDemoHigh.addEventListener('click', () => {
-        if (demoCasesCache && demoCasesCache[1]) {
-            populateForm(demoCasesCache[1].raw_booking_inputs);
-        } else {
-            populateForm({
-                hotel: 'City Hotel',
-                lead_time: 187,
-                arrival_date_year: 2017,
-                arrival_date_month: 'July',
-                arrival_date_day_of_month: 17,
-                stays_in_weekend_nights: 1,
-                stays_in_week_nights: 3,
-                adults: 2,
-                children: 0,
-                babies: 0,
-                meal: 'BB',
-                country: 'PRT',
-                market_segment: 'Online TA',
-                distribution_channel: 'TA/TO',
-                is_repeated_guest: 0,
-                previous_cancellations: 0,
-                previous_bookings_not_canceled: 0,
-                reserved_room_type: 'D',
-                assigned_room_type: 'D',
-                booking_changes: 0,
-                deposit_type: 'No Deposit',
-                adr: 105.3,
-                required_car_parking_spaces: 0,
-                total_of_special_requests: 0,
-                days_in_waiting_list: 0,
-                customer_type: 'Transient'
-            });
-        }
-    });
-
-    // Form Submission Handler
-    form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        submitPrediction();
-    });
-
-    async function submitPrediction() {
-        hideError();
-        setLoading(true);
-
-        const formData = new FormData(form);
-        const payload = {};
-        for (const [key, value] of formData.entries()) {
-            payload[key] = value.trim();
-        }
-
-        try {
-            const response = await fetch('/predict', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const result = await response.json();
-
-            if (!response.ok) {
-                showError(result.message || 'Validation error occurred.');
-                return;
-            }
-
-            renderPrediction(result.data);
-        } catch (err) {
-            console.error('Prediction request failed:', err);
-            showError('Unable to connect to the prediction server. Please ensure the backend is running.');
-        } finally {
-            setLoading(false);
-        }
+  /* ---- Loading state ---- */
+  function setLoading(isLoading) {
+    btnPredict.disabled = isLoading;
+    if (isLoading) {
+      btnText.style.display = 'none';
+      btnLoading.style.display = 'inline-flex';
+    } else {
+      btnText.style.display = 'inline-flex';
+      btnLoading.style.display = 'none';
     }
+  }
 
-    function renderPrediction(data) {
-        emptyResultContent.style.display = 'none';
-        activeResultContent.style.display = 'block';
+  /* ---- Reset ---- */
+  btnReset.addEventListener('click', () => {
+    form.reset();
+    hideError();
+    clearFieldErrors();
+    activeResult.style.display = 'none';
+    emptyState.style.display = 'block';
+  });
 
-        // Prediction Label
-        if (data.prediction === 1) {
-            predictionHeadline.textContent = 'LIKELY TO CANCEL';
-            predictionHeadline.className = 'prediction-headline text-cancel';
-        } else {
-            predictionHeadline.textContent = 'LIKELY NOT TO CANCEL';
-            predictionHeadline.className = 'prediction-headline text-not-cancel';
-        }
-
-        // Risk Badge
-        riskBadge.textContent = `${data.risk_level} Risk`;
-        riskBadge.className = `risk-badge ${data.risk_badge}`;
-
-        // Cancellation Probability Meter
-        const cancelPct = (data.cancellation_probability * 100).toFixed(1);
-        probCancelVal.textContent = `${cancelPct}%`;
-        probCancelMeter.style.width = `${cancelPct}%`;
-
-        // Non-cancellation Probability Meter
-        const notCancelPct = (data.non_cancellation_probability * 100).toFixed(1);
-        probNotCancelVal.textContent = `${notCancelPct}%`;
-        probNotCancelMeter.style.width = `${notCancelPct}%`;
-    }
-
-    function showError(message) {
-        errorMessageText.textContent = message;
-        errorAlert.style.display = 'flex';
-        errorAlert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-
-    function hideError() {
-        errorAlert.style.display = 'none';
-    }
-
-    function setLoading(isLoading) {
-        if (isLoading) {
-            btnPredict.disabled = true;
-            btnText.style.display = 'none';
-            spinner.style.display = 'inline-block';
-        } else {
-            btnPredict.disabled = false;
-            btnText.style.display = 'inline-block';
-            spinner.style.display = 'none';
-        }
-    }
-
-    // Reset Form Handler
-    btnReset.addEventListener('click', () => {
-        form.reset();
-        hideError();
-        activeResultContent.style.display = 'none';
-        emptyResultContent.style.display = 'block';
-    });
 });

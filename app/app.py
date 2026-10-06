@@ -46,8 +46,14 @@ except Exception as e:
 
 @app.route("/", methods=["GET"])
 def index():
-    """Serves the main prediction web interface."""
-    return render_template("index.html")
+    """Serves the landing page."""
+    return render_template("landing.html")
+
+
+@app.route("/predictor", methods=["GET"])
+def predictor():
+    """Serves the prediction form interface."""
+    return render_template("predictor.html")
 
 
 @app.route("/health", methods=["GET"])
@@ -100,7 +106,7 @@ def predict():
             }), 200
 
         # If traditional form submission:
-        return render_template("index.html", result=result, form_data=payload)
+        return render_template("predictor.html", result=result, form_data=payload)
 
     except ValidationError as val_err:
         logger.warning("Validation failed: %s", val_err.message)
@@ -110,7 +116,7 @@ def predict():
                 "message": val_err.message,
                 "errors": val_err.errors
             }), 400
-        return render_template("index.html", error=val_err.message, form_data=request.form.to_dict()), 400
+        return render_template("predictor.html", error=val_err.message, form_data=request.form.to_dict()), 400
 
     except Exception as exc:
         logger.exception("Unexpected error during prediction: %s", exc)
@@ -120,7 +126,7 @@ def predict():
                 "status": "error",
                 "message": user_message
             }), 500
-        return render_template("index.html", error=user_message, form_data=request.form.to_dict() if request.form else {}), 500
+        return render_template("predictor.html", error=user_message, form_data=request.form.to_dict() if request.form else {}), 500
 
 
 @app.errorhandler(404)

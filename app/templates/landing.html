@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hotel Cancellation Intelligence — IT3051 Data Mining Project</title>
+  <meta name="description" content="Machine-learning-powered hotel booking cancellation prediction. Estimate reservation cancellation risk using a Tuned Gradient Boosting model. IT3051 Fundamentals of Data Mining.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<!-- ============================================================
+     NAVIGATION
+     ============================================================ -->
+<nav class="landing-nav" id="mainNav" aria-label="Main navigation">
+  <div class="landing-nav__inner">
+    <a href="/" class="landing-nav__brand" aria-label="Hotel Cancellation Intelligence Home">
+      <div class="landing-nav__logo" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M3 21h18M3 7v14M21 7v14M6 3h12a3 3 0 013 3v1H3V6a3 3 0 013-3zM9 10h2M13 10h2M9 14h2M13 14h2M9 18h2M13 18h2"/>
+        </svg>
+      </div>
+      <div>
+        <div class="landing-nav__name">Hotel Cancellation Intelligence</div>
+        <div class="landing-nav__sub">IT3051 Data Mining Project</div>
+      </div>
+    </a>
+
+    <ul class="landing-nav__links" role="list">
+      <li><a href="#about" class="landing-nav__link">About</a></li>
+      <li><a href="#how-it-works" class="landing-nav__link">How It Works</a></li>
+      <li><a href="#performance" class="landing-nav__link">Performance</a></li>
+      <li><a href="#features" class="landing-nav__link">Features</a></li>
+    </ul>
+
+    <a href="/predictor" class="landing-nav__cta">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+      </svg>
+      Predict Now
+    </a>
+
+    <button class="landing-nav__hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- Mobile menu -->
+<div class="landing-nav__mobile-menu" id="mobileMenu" role="navigation" aria-label="Mobile navigation">
+  <a href="#about" class="landing-nav__link">About</a>
+  <a href="#how-it-works" class="landing-nav__link">How It Works</a>
+  <a href="#performance" class="landing-nav__link">Performance</a>
+  <a href="#features" class="landing-nav__link">Features</a>
+  <a href="/predictor" class="landing-nav__cta">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+    </svg>
+    Predict Now
+  </a>
+</div>
+
+<main id="main-content">
+
+  <!-- ============================================================
+       HERO
+       ============================================================ -->
+  <section class="hero" aria-labelledby="heroHeading">
+    <div class="hero__grid">
+      <!-- Left: copy -->
+      <div class="hero__content">
+        <div class="hero__eyebrow">
+          <span class="dot" aria-hidden="true"></span>
+          Machine Learning · Hotel Revenue Intelligence
+        </div>
+
+        <h1 class="hero__headline" id="heroHeading">
+          Predict Booking Cancellations<br>
+          <span class="accent">Before They Impact Your Revenue</span>
+        </h1>
+
+        <p class="hero__subtext">
+          Use machine learning to estimate hotel reservation cancellation risk
+          and support smarter occupancy, inventory, and revenue-management decisions.
+        </p>
+
+        <div class="hero__actions">
+          <a href="/predictor" class="btn-hero-primary" role="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+              <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            Predict Cancellation Risk
+          </a>
+          <a href="#how-it-works" class="btn-hero-secondary" role="button">
+            Explore How It Works
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </a>
+        </div>
+
+        <div class="hero__stats-bar" aria-label="Model performance highlights">
+          <div class="hero__stat-item">
+            <span class="hero__stat-num">85%</span>
+            <span class="hero__stat-label">Test Accuracy</span>
+          </div>
+          <div class="hero__stat-item">
+            <span class="hero__stat-num">0.915</span>
+            <span class="hero__stat-label">ROC-AUC</span>
+          </div>
+          <div class="hero__stat-item">
+            <span class="hero__stat-num">899</span>
+            <span class="hero__stat-label">Engineered Features</span>
+          </div>
+          <div class="hero__stat-item">
+            <span class="hero__stat-num">4</span>
+            <span class="hero__stat-label">Models Compared</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: visual card -->
+      <div class="hero__visual" aria-hidden="true">
+        <div class="hero-card" role="img" aria-label="Sample prediction result preview">
+          <div class="hero-card__label">Booking Risk Assessment — Preview</div>
+
+          <div class="hero-card__risk-display">
+            <div>
+              <div style="font-size:.65rem;color:var(--slate-400);font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem;">Cancellation Probability</div>
+              <div class="hero-card__pct"><span>70.3</span>%</div>
+            </div>
+            <div class="hero-card__risk-badge">HIGH RISK</div>
+          </div>
+
+          <div class="hero-card__gauge" role="progressbar" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100">
+            <div class="hero-card__gauge-fill"></div>
+          </div>
+
+          <div class="hero-card__stats">
+            <div class="hero-card__stat">
+              <span class="hero-card__stat-key">Lead Time</span>
+              <span class="hero-card__stat-val">187 days</span>
+            </div>
+            <div class="hero-card__stat">
+              <span class="hero-card__stat-key">Market Segment</span>
+              <span class="hero-card__stat-val">Online TA</span>
+            </div>
+            <div class="hero-card__stat">
+              <span class="hero-card__stat-key">Deposit Policy</span>
+              <span class="hero-card__stat-val">No Deposit</span>
+            </div>
+            <div class="hero-card__stat">
+              <span class="hero-card__stat-key">Special Requests</span>
+              <span class="hero-card__stat-val">0</span>
+            </div>
+          </div>
+
+          <div class="hero-card__model-pill">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            Tuned Gradient Boosting Model
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       WHY CANCELLATION MATTERS
+       ============================================================ -->
+  <section class="why-section" id="why" aria-labelledby="whyHeading">
+    <div class="container">
+      <header class="section-header reveal">
+        <div class="section-eyebrow">Business Value</div>
+        <h2 class="section-heading" id="whyHeading">Why Cancellation Prediction Matters</h2>
+        <p class="section-subtext">
+          Hotel booking cancellations create real operational and financial challenges.
+          Earlier risk information gives management more time to respond.
+        </p>
+      </header>
+
+      <div class="why-grid">
+        <div class="why-card reveal reveal-delay-1">
+          <div class="why-card__icon" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+            </svg>
+          </div>
+          <h3 class="why-card__title">Revenue Protection</h3>
+          <p class="why-card__body">
+            Unexpected cancellations can leave rooms unsold and reduce potential revenue.
+            Earlier risk estimates support more proactive inventory management.
+          </p>
+        </div>
+
+        <div class="why-card reveal reveal-delay-2">
+          <div class="why-card__icon" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <h3 class="why-card__title">Occupancy Planning</h3>
+          <p class="why-card__body">
+            Earlier risk information can help managers make better inventory and
+            overbooking decisions aligned with actual expected demand.
+          </p>
+        </div>
+
+        <div class="why-card reveal reveal-delay-3">
+          <div class="why-card__icon" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+            </svg>
+          </div>
+          <h3 class="why-card__title">Operational Planning</h3>
+          <p class="why-card__body">
+            More accurate occupancy expectations can support staffing,
+            housekeeping and resource planning across departments.
+          </p>
+        </div>
+
+        <div class="why-card reveal reveal-delay-4">
+          <div class="why-card__icon" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+            </svg>
+          </div>
+          <h3 class="why-card__title">Guest Strategy</h3>
+          <p class="why-card__body">
+            High-risk reservations can be handled using appropriate retention,
+            confirmation, or deposit strategies at the right time.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       ABOUT THE SYSTEM
+       ============================================================ -->
+  <section class="about-section" id="about" aria-labelledby="aboutHeading">
+    <div class="container">
+      <div class="about-grid">
+        <div class="reveal">
+          <div class="section-eyebrow">About the System</div>
+          <h2 class="section-heading" id="aboutHeading">Built for Decision Support</h2>
+          <p class="section-subtext" style="max-width:none;">
+            This Hotel Booking Cancellation Prediction System was developed as part of the
+            <strong>IT3051 Fundamentals of Data Mining</strong> mini project. Its purpose is to
+            estimate whether an existing hotel reservation is likely to be cancelled using
+            historical booking patterns.
+          </p>
+
+          <div class="about-features">
+            <div class="about-feature">
+              <div class="about-feature__icon" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="about-feature__text">Data cleaning &amp; exploratory data analysis</div>
+            </div>
+            <div class="about-feature">
+              <div class="about-feature__icon" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="about-feature__text">Feature engineering producing 899 transformed features</div>
+            </div>
+            <div class="about-feature">
+              <div class="about-feature__icon" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="about-feature__text">Comparison of 4 machine learning models</div>
+            </div>
+            <div class="about-feature">
+              <div class="about-feature__icon" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="about-feature__text">Hyperparameter optimisation &amp; cross-validation</div>
+            </div>
+            <div class="about-feature">
+              <div class="about-feature__icon" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="about-feature__text">Flask prediction API &amp; validated input pipeline</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="about-card reveal reveal-delay-2">
+          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;">
+            <div style="width:44px;height:44px;background:linear-gradient(135deg,var(--purple-600),var(--purple-700));border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;color:var(--white);">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <div>
+              <div style="font-family:var(--font-display);font-size:1rem;font-weight:700;color:var(--slate-900);">System Overview</div>
+              <div style="font-size:.75rem;color:var(--slate-400);">IT3051 · Fundamentals of Data Mining</div>
+            </div>
+          </div>
+
+          <p style="font-size:.9rem;color:var(--slate-600);line-height:1.7;margin-bottom:1rem;">
+            The system predicts the target variable <code style="background:var(--slate-100);padding:.1rem .35rem;border-radius:4px;font-size:.82rem;color:var(--purple-700);">is_canceled</code>,
+            where <strong>0&nbsp;=&nbsp;Not&nbsp;Cancelled</strong> and <strong>1&nbsp;=&nbsp;Cancelled</strong>.
+          </p>
+
+          <div class="target-pill">
+            <span class="target-pill__label">TARGET</span>
+            <span class="target-pill__value">is_canceled &nbsp;∈&nbsp; {0, 1}</span>
+          </div>
+
+          <div class="about-card__disclaimer">
+            "The prediction supports business decision-making and does not guarantee future guest behaviour."
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       HOW IT WORKS
+       ============================================================ -->
+  <section class="how-section" id="how-it-works" aria-labelledby="howHeading">
+    <div class="container">
+      <header class="section-header reveal" style="text-align:center;">
+        <div class="section-eyebrow">Process</div>
+        <h2 class="section-heading" id="howHeading">How It Works</h2>
+        <p class="section-subtext" style="margin:0 auto;">
+          From raw booking data to a business-ready cancellation risk estimate — five clear steps.
+        </p>
+      </header>
+
+      <div class="steps-flow" role="list">
+        <div class="step-item" role="listitem">
+          <div class="step-num" aria-hidden="true">1</div>
+          <div class="step-body">
+            <h3 class="step-title">Enter Booking Details</h3>
+            <p class="step-desc">
+              The user provides reservation, guest, stay, and booking-history information
+              across 26 structured input fields covering the full booking context.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-item" role="listitem">
+          <div class="step-num" aria-hidden="true">2</div>
+          <div class="step-body">
+            <h3 class="step-title">Validate Information</h3>
+            <p class="step-desc">
+              The system validates input values and rejects invalid or incomplete data
+              before any prediction is attempted, protecting pipeline integrity.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-item" role="listitem">
+          <div class="step-num" aria-hidden="true">3</div>
+          <div class="step-body">
+            <h3 class="step-title">Prepare the Booking</h3>
+            <p class="step-desc">
+              The same feature-engineering and preprocessing logic used during model
+              development transforms the booking into 899 numeric features.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-item" role="listitem">
+          <div class="step-num" aria-hidden="true">4</div>
+          <div class="step-body">
+            <h3 class="step-title">Predict Cancellation Risk</h3>
+            <p class="step-desc">
+              The trained Tuned Gradient Boosting model evaluates the processed
+              reservation and outputs a calibrated cancellation probability.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-item" role="listitem">
+          <div class="step-num" aria-hidden="true">5</div>
+          <div class="step-body">
+            <h3 class="step-title">Display Business-Friendly Result</h3>
+            <p class="step-desc">
+              The system returns a clear outcome — <em>Likely to Cancel</em> or
+              <em>Likely Not to Cancel</em> — along with the cancellation probability
+              and a LOW / MEDIUM / HIGH risk classification.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       MODEL PERFORMANCE
+       ============================================================ -->
+  <section class="performance-section" id="performance" aria-labelledby="perfHeading">
+    <div class="container">
+      <header class="section-header reveal">
+        <div class="section-eyebrow">Model Performance</div>
+        <h2 class="section-heading" id="perfHeading">Rigorously Evaluated</h2>
+        <p class="section-subtext">
+          The champion model was selected after comparing four tuned classifiers
+          on test accuracy, F1-score, ROC-AUC, and generalisation.
+        </p>
+      </header>
+
+      <div class="reveal reveal-delay-1" style="margin-bottom:2rem;">
+        <div class="perf-model-badge">
+          <div class="model-icon" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          </div>
+          Selected Champion Model: Tuned Gradient Boosting
+        </div>
+      </div>
+
+      <!-- Primary metrics -->
+      <div class="metrics-grid reveal reveal-delay-1" role="list" aria-label="Model metrics">
+        <div class="metric-card" role="listitem">
+          <div class="metric-card__label">Accuracy</div>
+          <div class="metric-card__value">85.01</div>
+          <div class="metric-card__unit">percent</div>
+        </div>
+        <div class="metric-card" role="listitem">
+          <div class="metric-card__label">Precision</div>
+          <div class="metric-card__value">75.65</div>
+          <div class="metric-card__unit">percent</div>
+        </div>
+        <div class="metric-card" role="listitem">
+          <div class="metric-card__label">Recall</div>
+          <div class="metric-card__value">67.14</div>
+          <div class="metric-card__unit">percent</div>
+        </div>
+        <div class="metric-card" role="listitem">
+          <div class="metric-card__label">F1 Score</div>
+          <div class="metric-card__value highlight">71.14</div>
+          <div class="metric-card__unit">percent</div>
+        </div>
+        <div class="metric-card" role="listitem">
+          <div class="metric-card__label">ROC-AUC</div>
+          <div class="metric-card__value highlight">91.52</div>
+          <div class="metric-card__unit">percent</div>
+        </div>
+      </div>
+
+      <!-- Secondary stats -->
+      <div class="perf-secondary-grid reveal reveal-delay-2">
+        <div class="perf-stat">
+          <span class="perf-stat__label">Train Accuracy</span>
+          <span class="perf-stat__value">85.62%</span>
+        </div>
+        <div class="perf-stat">
+          <span class="perf-stat__label">Test Accuracy</span>
+          <span class="perf-stat__value">85.01%</span>
+        </div>
+        <div class="perf-stat">
+          <span class="perf-stat__label">Overfitting Gap</span>
+          <span class="perf-stat__value good">0.62 pp</span>
+        </div>
+        <div class="perf-stat">
+          <span class="perf-stat__label">Best CV F1</span>
+          <span class="perf-stat__value">70.76%</span>
+        </div>
+        <div class="perf-stat">
+          <span class="perf-stat__label">Transformed Features</span>
+          <span class="perf-stat__value">899</span>
+        </div>
+        <div class="perf-stat">
+          <span class="perf-stat__label">Models Compared</span>
+          <span class="perf-stat__value">4 classifiers</span>
+        </div>
+      </div>
+
+      <!-- Comparison Table -->
+      <div class="comparison-table-wrapper reveal reveal-delay-3">
+        <table class="comparison-table" role="table" aria-label="Model comparison">
+          <thead>
+            <tr>
+              <th scope="col">Model</th>
+              <th scope="col">Test Accuracy</th>
+              <th scope="col">F1 Score</th>
+              <th scope="col">ROC-AUC</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Logistic Regression (Tuned)</td>
+              <td>78.63%</td>
+              <td>68.28%</td>
+              <td>87.76%</td>
+            </tr>
+            <tr>
+              <td>Decision Tree (Tuned)</td>
+              <td>79.74%</td>
+              <td>70.27%</td>
+              <td>87.83%</td>
+            </tr>
+            <tr>
+              <td>Random Forest (Tuned)</td>
+              <td>78.35%</td>
+              <td>68.42%</td>
+              <td>89.09%</td>
+            </tr>
+            <tr class="champion">
+              <td>
+                Gradient Boosting (Tuned)
+                <span class="champion-tag">Selected</span>
+              </td>
+              <td>85.01%</td>
+              <td>71.14%</td>
+              <td>91.52%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="perf-explanation reveal reveal-delay-4">
+        <strong style="color:var(--slate-200);">Selection rationale:</strong>
+        Gradient Boosting was selected after comparing Logistic Regression, Decision Tree,
+        Random Forest and Gradient Boosting. It provided the strongest overall balance of
+        test accuracy, F1-score, ROC-AUC, precision, cross-validation performance and
+        generalisation — with a minimal overfitting gap of 0.62 percentage points.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       FEATURES
+       ============================================================ -->
+  <section class="features-section" id="features" aria-labelledby="featuresHeading">
+    <div class="container">
+      <header class="section-header reveal" style="text-align:center;">
+        <div class="section-eyebrow">System Capabilities</div>
+        <h2 class="section-heading" id="featuresHeading">Designed for Practical Use</h2>
+        <p class="section-subtext" style="margin:0 auto;">
+          Built with real-world deployment considerations in mind — not just academic performance.
+        </p>
+      </header>
+
+      <div class="features-grid">
+        <div class="feature-card reveal reveal-delay-1">
+          <div class="feature-card__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          </div>
+          <h3 class="feature-card__title">Real-Time Prediction</h3>
+          <p class="feature-card__desc">Instant cancellation-risk estimation from booking information with no perceptible delay.</p>
+        </div>
+
+        <div class="feature-card reveal reveal-delay-2">
+          <div class="feature-card__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          </div>
+          <h3 class="feature-card__title">Probability-Based Result</h3>
+          <p class="feature-card__desc">Displays a calibrated cancellation probability, not just a binary class, for richer decision context.</p>
+        </div>
+
+        <div class="feature-card reveal reveal-delay-3">
+          <div class="feature-card__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <h3 class="feature-card__title">Validated Inputs</h3>
+          <p class="feature-card__desc">Backend validation protects the prediction pipeline from invalid, missing, or out-of-range booking data.</p>
+        </div>
+
+        <div class="feature-card reveal reveal-delay-1">
+          <div class="feature-card__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h3 class="feature-card__title">Leakage-Safe Pipeline</h3>
+          <p class="feature-card__desc">Post-outcome fields such as <code>reservation_status</code> are excluded to ensure fair, realistic predictions.</p>
+        </div>
+
+        <div class="feature-card reveal reveal-delay-2">
+          <div class="feature-card__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h7"/></svg>
+          </div>
+          <h3 class="feature-card__title">Consistent Preprocessing</h3>
+          <p class="feature-card__desc">Uses the exact fitted preprocessing pipeline from model development, ensuring consistent feature representation.</p>
+        </div>
+
+        <div class="feature-card reveal reveal-delay-3">
+          <div class="feature-card__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+          <h3 class="feature-card__title">Demo Scenarios</h3>
+          <p class="feature-card__desc">Includes three authentic test-set booking examples covering low, moderate, and high cancellation-risk profiles.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       TECHNOLOGY
+       ============================================================ -->
+  <section class="tech-section" aria-labelledby="techHeading">
+    <div class="container">
+      <div class="section-eyebrow" style="margin-bottom:.75rem;">Built With</div>
+      <h2 class="section-heading reveal" id="techHeading" style="font-size:1.5rem;">Technology Stack</h2>
+      <div class="tech-chips reveal reveal-delay-1">
+        <span class="tech-chip"><span class="chip-dot" aria-hidden="true"></span>Python 3</span>
+        <span class="tech-chip"><span class="chip-dot" aria-hidden="true"></span>scikit-learn</span>
+        <span class="tech-chip"><span class="chip-dot" aria-hidden="true"></span>Gradient Boosting</span>
+        <span class="tech-chip"><span class="chip-dot" aria-hidden="true"></span>Flask</span>
+        <span class="tech-chip"><span class="chip-dot" aria-hidden="true"></span>Pandas</span>
+        <span class="tech-chip"><span class="chip-dot" aria-hidden="true"></span>NumPy</span>
+        <span class="tech-chip"><span class="chip-dot" aria-hidden="true"></span>HTML5</span>
+        <span class="tech-chip"><span class="chip-dot" aria-hidden="true"></span>CSS3</span>
+        <span class="tech-chip"><span class="chip-dot" aria-hidden="true"></span>JavaScript</span>
+        <span class="tech-chip"><span class="chip-dot" aria-hidden="true"></span>Pytest</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       CALL TO ACTION
+       ============================================================ -->
+  <section class="cta-section" aria-labelledby="ctaHeading">
+    <h2 class="cta-section__heading" id="ctaHeading">Ready to Evaluate a Booking?</h2>
+    <p class="cta-section__sub">
+      Enter reservation details and receive an instant cancellation-risk estimate
+      from the trained prediction model.
+    </p>
+    <a href="/predictor" class="btn-cta" role="button">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      Start Prediction
+    </a>
+  </section>
+
+</main>
+
+<!-- ============================================================
+     FOOTER
+     ============================================================ -->
+<footer class="landing-footer">
+  <div class="landing-footer__inner">
+    <div>
+      <div class="landing-footer__brand-name">Hotel Booking Cancellation Prediction</div>
+      <div class="landing-footer__brand-sub">
+        IT3051 – Fundamentals of Data Mining<br>
+        Mini Project 2026
+      </div>
+      <div class="landing-footer__disclaimer">
+        For academic demonstration and decision-support purposes.
+      </div>
+    </div>
+    <nav aria-label="Footer navigation">
+      <div class="landing-footer__links">
+        <a href="#about" class="landing-footer__link">About</a>
+        <a href="#how-it-works" class="landing-footer__link">How It Works</a>
+        <a href="#performance" class="landing-footer__link">Performance</a>
+        <a href="/predictor" class="landing-footer__link">Predict</a>
+      </div>
+    </nav>
+  </div>
+  <div class="landing-footer__bottom">
+    Hotel Cancellation Intelligence · IT3051 Fundamentals of Data Mining · Tuned Gradient Boosting (ROC-AUC 0.9152)
+  </div>
+</footer>
+
+<script src="/static/js/landing.js"></script>
+</body>
+</html>

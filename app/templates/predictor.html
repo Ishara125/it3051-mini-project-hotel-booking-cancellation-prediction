@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cancellation Risk Predictor — Hotel Cancellation Intelligence</title>
+  <meta name="description" content="Enter hotel booking details to receive an instant cancellation-risk estimate from the Tuned Gradient Boosting model.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<!-- ============================================================
+     COMPACT HEADER
+     ============================================================ -->
+<header class="predictor-header">
+  <div class="predictor-header__inner">
+    <a href="/" class="predictor-header__back" aria-label="Return to landing page">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      Back to Home
+    </a>
+
+    <div class="predictor-header__brand">
+      <div class="predictor-header__logo" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 21h18M3 7v14M21 7v14M6 3h12a3 3 0 013 3v1H3V6a3 3 0 013-3zM9 10h2M13 10h2M9 14h2M13 14h2"/>
+        </svg>
+      </div>
+      <span class="predictor-header__title">Hotel Booking Cancellation Prediction</span>
+    </div>
+
+    <div class="predictor-header__model-badge" aria-label="Model: Gradient Boosting, ROC-AUC 0.9152">
+      <span class="badge-dot" aria-hidden="true"></span>
+      Gradient Boosting · ROC-AUC 0.9152
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     MAIN CONTENT
+     ============================================================ -->
+<main class="predictor-main">
+
+  <!-- Demo Scenarios Bar -->
+  <section class="predictor-demo-bar" aria-labelledby="demoBarTitle">
+    <div class="predictor-demo-bar__header">
+      <span class="predictor-demo-bar__title" id="demoBarTitle">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+        Demo Scenarios
+      </span>
+      <span class="predictor-demo-bar__hint">Select a preset to populate an authentic test-set booking:</span>
+    </div>
+    <div class="predictor-demo-bar__buttons" role="group" aria-label="Demo scenario presets">
+      <button type="button" class="demo-btn low-risk" id="btnDemoLow">
+        <span class="demo-dot" aria-hidden="true"></span>
+        Low Risk — Direct / Short Lead Time
+      </button>
+      <button type="button" class="demo-btn moderate-risk" id="btnDemoMod">
+        <span class="demo-dot" aria-hidden="true"></span>
+        Medium Risk — Online TA / Medium Lead Time
+      </button>
+      <button type="button" class="demo-btn high-risk" id="btnDemoHigh">
+        <span class="demo-dot" aria-hidden="true"></span>
+        High Risk — Online TA / Long Lead Time (187d)
+      </button>
+    </div>
+  </section>
+
+  <!-- Two-column layout -->
+  <div class="predictor-grid">
+
+    <!-- ============================================================
+         BOOKING FORM
+         ============================================================ -->
+    <div class="form-column">
+      <form id="bookingForm" class="prediction-form" novalidate aria-label="Booking details form">
+
+        <!-- Global Error Alert -->
+        <div id="errorAlert" class="alert-error" role="alert" aria-live="polite">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <div>
+            <div class="alert-error__title">Validation Error</div>
+            <div id="errorMessageText">Please check your inputs and try again.</div>
+          </div>
+        </div>
+
+        <!-- ── Section 1: Booking Details ── -->
+        <div class="form-section-card">
+          <div class="form-section-header">
+            <span class="form-section-num" aria-hidden="true">1</span>
+            <svg class="form-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            <h2 class="form-section-title">Booking Details</h2>
+            <span class="form-section-sub">Core reservation information</span>
+          </div>
+
+          <div class="fields-grid grid-2">
+            <div class="form-group">
+              <label for="hotel">Hotel Type <span class="req" aria-label="required">*</span></label>
+              <select id="hotel" name="hotel" required aria-describedby="hotel-hint hotel-error">
+                <option value="City Hotel" selected>City Hotel</option>
+                <option value="Resort Hotel">Resort Hotel</option>
+              </select>
+              <span class="field-hint" id="hotel-hint">Urban hotel or luxury resort property.</span>
+              <span class="field-error" id="hotel-error" role="alert"></span>
+            </div>
+
+            <div class="form-group">
+              <label for="lead_time">Lead Time (Days) <span class="req" aria-label="required">*</span></label>
+              <input type="number" id="lead_time" name="lead_time" min="0" max="1000" value="30" required aria-describedby="lead-hint lead-error">
+              <span class="field-hint" id="lead-hint">Days between reservation date and arrival date.</span>
+              <span class="field-error" id="lead-error" role="alert"></span>
+            </div>
+
+            <div class="form-group">
+              <label for="arrival_date">Arrival Date <span class="req" aria-label="required">*</span></label>
+              <input type="date" id="arrival_date" name="arrival_date" value="2017-06-15" required aria-describedby="date-hint date-error">
+              <span class="field-hint" id="date-hint">Planned check-in date (used to derive month and year features).</span>
+              <span class="field-error" id="date-error" role="alert"></span>
+            </div>
+
+            <div class="form-group">
+              <label for="adr">Average Daily Rate (ADR) € <span class="req" aria-label="required">*</span></label>
+              <input type="number" id="adr" name="adr" min="0" max="5000" step="0.01" value="110.00" required aria-describedby="adr-hint adr-error">
+              <span class="field-hint" id="adr-hint">Average room rate per night in Euros.</span>
+              <span class="field-error" id="adr-error" role="alert"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Section 2: Guest Details ── -->
+        <div class="form-section-card">
+          <div class="form-section-header">
+            <span class="form-section-num" aria-hidden="true">2</span>
+            <svg class="form-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+            </svg>
+            <h2 class="form-section-title">Guest Details</h2>
+            <span class="form-section-sub">Traveller composition and origin</span>
+          </div>
+
+          <div class="fields-grid grid-4">
+            <div class="form-group">
+              <label for="adults">Adults <span class="req" aria-label="required">*</span></label>
+              <input type="number" id="adults" name="adults" min="0" max="20" value="2" required aria-describedby="adults-error">
+              <span class="field-error" id="adults-error" role="alert"></span>
+            </div>
+
+            <div class="form-group">
+              <label for="children">Children</label>
+              <input type="number" id="children" name="children" min="0" max="10" value="0">
+            </div>
+
+            <div class="form-group">
+              <label for="babies">Babies</label>
+              <input type="number" id="babies" name="babies" min="0" max="10" value="0">
+            </div>
+
+            <div class="form-group">
+              <label for="country">Country of Origin <span class="req" aria-label="required">*</span></label>
+              <select id="country" name="country" required aria-describedby="country-error">
+                <option value="PRT" selected>PRT – Portugal</option>
+                <option value="GBR">GBR – United Kingdom</option>
+                <option value="FRA">FRA – France</option>
+                <option value="ESP">ESP – Spain</option>
+                <option value="DEU">DEU – Germany</option>
+                <option value="ITA">ITA – Italy</option>
+                <option value="IRL">IRL – Ireland</option>
+                <option value="BEL">BEL – Belgium</option>
+                <option value="BRA">BRA – Brazil</option>
+                <option value="NLD">NLD – Netherlands</option>
+                <option value="USA">USA – United States</option>
+                <option value="CHE">CHE – Switzerland</option>
+                <option value="AUT">AUT – Austria</option>
+                <option value="CN">CN – China</option>
+                <option value="SWE">SWE – Sweden</option>
+                <option value="POL">POL – Poland</option>
+                <option value="ISR">ISR – Israel</option>
+                <option value="RUS">RUS – Russia</option>
+                <option value="NOR">NOR – Norway</option>
+                <option value="ROU">ROU – Romania</option>
+              </select>
+              <span class="field-error" id="country-error" role="alert"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Section 3: Stay Details ── -->
+        <div class="form-section-card">
+          <div class="form-section-header">
+            <span class="form-section-num" aria-hidden="true">3</span>
+            <svg class="form-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            <h2 class="form-section-title">Stay Details</h2>
+            <span class="form-section-sub">Duration and accommodation specifics</span>
+          </div>
+
+          <div class="fields-grid grid-3">
+            <div class="form-group">
+              <label for="stays_in_weekend_nights">Weekend Nights</label>
+              <input type="number" id="stays_in_weekend_nights" name="stays_in_weekend_nights" min="0" max="30" value="1" aria-describedby="wend-hint">
+              <span class="field-hint" id="wend-hint">Friday / Saturday nights in stay.</span>
+            </div>
+
+            <div class="form-group">
+              <label for="stays_in_week_nights">Week Nights</label>
+              <input type="number" id="stays_in_week_nights" name="stays_in_week_nights" min="0" max="60" value="2" aria-describedby="wnight-hint">
+              <span class="field-hint" id="wnight-hint">Monday to Thursday nights in stay.</span>
+            </div>
+
+            <div class="form-group">
+              <label for="required_car_parking_spaces">Parking Spaces</label>
+              <input type="number" id="required_car_parking_spaces" name="required_car_parking_spaces" min="0" max="8" value="0" aria-describedby="park-hint">
+              <span class="field-hint" id="park-hint">Number of parking spots requested.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Section 4: Reservation History ── -->
+        <div class="form-section-card">
+          <div class="form-section-header">
+            <span class="form-section-num" aria-hidden="true">4</span>
+            <svg class="form-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+            </svg>
+            <h2 class="form-section-title">Reservation History</h2>
+            <span class="form-section-sub">Guest's prior booking behaviour</span>
+          </div>
+
+          <div class="fields-grid grid-3">
+            <div class="form-group">
+              <label for="is_repeated_guest">Repeated Guest?</label>
+              <select id="is_repeated_guest" name="is_repeated_guest" aria-describedby="repeat-hint">
+                <option value="0" selected>No (New Guest)</option>
+                <option value="1">Yes (Returning Guest)</option>
+              </select>
+              <span class="field-hint" id="repeat-hint">Has this guest stayed before?</span>
+            </div>
+
+            <div class="form-group">
+              <label for="previous_cancellations">Previous Cancellations</label>
+              <input type="number" id="previous_cancellations" name="previous_cancellations" min="0" max="30" value="0" aria-describedby="prev-cancel-hint">
+              <span class="field-hint" id="prev-cancel-hint">Prior bookings cancelled by this guest.</span>
+            </div>
+
+            <div class="form-group">
+              <label for="previous_bookings_not_canceled">Previous Honoured Bookings</label>
+              <input type="number" id="previous_bookings_not_canceled" name="previous_bookings_not_canceled" min="0" max="100" value="0" aria-describedby="prev-ok-hint">
+              <span class="field-hint" id="prev-ok-hint">Prior bookings completed without cancellation.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Section 5: Additional Booking Information ── -->
+        <div class="form-section-card">
+          <div class="form-section-header">
+            <span class="form-section-num" aria-hidden="true">5</span>
+            <svg class="form-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M5.34 18.66l-1.41 1.41M3 12H1M23 12h-2M19.07 19.07l-1.41-1.41M5.34 5.34L3.93 3.93M12 1V3M12 21v2"/>
+            </svg>
+            <h2 class="form-section-title">Additional Booking Information</h2>
+            <span class="form-section-sub">Channel, deposit, room, and preferences</span>
+          </div>
+
+          <div class="fields-grid grid-3">
+            <div class="form-group">
+              <label for="market_segment">Market Segment <span class="req" aria-label="required">*</span></label>
+              <select id="market_segment" name="market_segment" required aria-describedby="mkt-error">
+                <option value="Online TA" selected>Online Travel Agent (Online TA)</option>
+                <option value="Offline TA/TO">Offline TA / Tour Operator</option>
+                <option value="Direct">Direct Booking</option>
+                <option value="Corporate">Corporate</option>
+                <option value="Groups">Groups</option>
+                <option value="Complementary">Complementary</option>
+                <option value="Aviation">Aviation</option>
+              </select>
+              <span class="field-error" id="mkt-error" role="alert"></span>
+            </div>
+
+            <div class="form-group">
+              <label for="distribution_channel">Distribution Channel <span class="req" aria-label="required">*</span></label>
+              <select id="distribution_channel" name="distribution_channel" required aria-describedby="dist-error">
+                <option value="TA/TO" selected>TA/TO (Travel Agent / Tour Operator)</option>
+                <option value="Direct">Direct</option>
+                <option value="Corporate">Corporate</option>
+                <option value="GDS">Global Distribution System (GDS)</option>
+              </select>
+              <span class="field-error" id="dist-error" role="alert"></span>
+            </div>
+
+            <div class="form-group">
+              <label for="deposit_type">Deposit Policy <span class="req" aria-label="required">*</span></label>
+              <select id="deposit_type" name="deposit_type" required aria-describedby="dep-error">
+                <option value="No Deposit" selected>No Deposit</option>
+                <option value="Non Refund">Non Refundable</option>
+                <option value="Refundable">Refundable</option>
+              </select>
+              <span class="field-error" id="dep-error" role="alert"></span>
+            </div>
+
+            <div class="form-group">
+              <label for="customer_type">Customer Type <span class="req" aria-label="required">*</span></label>
+              <select id="customer_type" name="customer_type" required aria-describedby="cust-error">
+                <option value="Transient" selected>Transient</option>
+                <option value="Transient-Party">Transient-Party</option>
+                <option value="Contract">Contract</option>
+                <option value="Group">Group</option>
+              </select>
+              <span class="field-error" id="cust-error" role="alert"></span>
+            </div>
+
+            <div class="form-group">
+              <label for="reserved_room_type">Reserved Room Type <span class="req" aria-label="required">*</span></label>
+              <select id="reserved_room_type" name="reserved_room_type" required aria-describedby="rrt-error">
+                <option value="A" selected>Room Type A</option>
+                <option value="B">Room Type B</option>
+                <option value="C">Room Type C</option>
+                <option value="D">Room Type D</option>
+                <option value="E">Room Type E</option>
+                <option value="F">Room Type F</option>
+                <option value="G">Room Type G</option>
+                <option value="H">Room Type H</option>
+                <option value="L">Room Type L</option>
+              </select>
+              <span class="field-error" id="rrt-error" role="alert"></span>
+            </div>
+
+            <div class="form-group">
+              <label for="assigned_room_type">Assigned Room Type <span class="req" aria-label="required">*</span></label>
+              <select id="assigned_room_type" name="assigned_room_type" required aria-describedby="art-error">
+                <option value="A" selected>Room Type A</option>
+                <option value="B">Room Type B</option>
+                <option value="C">Room Type C</option>
+                <option value="D">Room Type D</option>
+                <option value="E">Room Type E</option>
+                <option value="F">Room Type F</option>
+                <option value="G">Room Type G</option>
+                <option value="H">Room Type H</option>
+                <option value="I">Room Type I</option>
+                <option value="K">Room Type K</option>
+              </select>
+              <span class="field-error" id="art-error" role="alert"></span>
+            </div>
+
+            <div class="form-group">
+              <label for="meal">Meal Plan</label>
+              <select id="meal" name="meal">
+                <option value="BB" selected>Bed &amp; Breakfast (BB)</option>
+                <option value="HB">Half Board (HB)</option>
+                <option value="FB">Full Board (FB)</option>
+                <option value="SC">Self Catering (SC)</option>
+                <option value="Undefined">Undefined</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="booking_changes">Booking Changes</label>
+              <input type="number" id="booking_changes" name="booking_changes" min="0" max="25" value="0" aria-describedby="bc-hint">
+              <span class="field-hint" id="bc-hint">Number of amendments made to this reservation.</span>
+            </div>
+
+            <div class="form-group">
+              <label for="total_of_special_requests">Special Requests</label>
+              <input type="number" id="total_of_special_requests" name="total_of_special_requests" min="0" max="5" value="0" aria-describedby="sr-hint">
+              <span class="field-hint" id="sr-hint">e.g. high floor, twin beds, quiet room.</span>
+            </div>
+
+            <div class="form-group">
+              <label for="days_in_waiting_list">Days in Waiting List</label>
+              <input type="number" id="days_in_waiting_list" name="days_in_waiting_list" min="0" max="400" value="0">
+            </div>
+
+            <div class="form-group">
+              <label for="agent">Travel Agent ID <span style="font-weight:400;color:var(--slate-400);">(optional)</span></label>
+              <input type="text" id="agent" name="agent" placeholder="e.g. 9 — leave blank if none" aria-describedby="agent-hint">
+              <span class="field-hint" id="agent-hint">Numeric agent identifier or leave blank.</span>
+            </div>
+
+            <div class="form-group">
+              <label for="company">Company ID <span style="font-weight:400;color:var(--slate-400);">(optional)</span></label>
+              <input type="text" id="company" name="company" placeholder="e.g. 40 — leave blank if none" aria-describedby="company-hint">
+              <span class="field-hint" id="company-hint">Numeric company identifier or leave blank.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="form-actions">
+          <button type="submit" id="btnPredict" class="btn-predict" aria-label="Analyze cancellation risk">
+            <span class="btn-text">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              Analyze Cancellation Risk
+            </span>
+            <span class="btn-loading" aria-live="polite">
+              <span class="spinner" aria-hidden="true"></span>
+              Analyzing Booking...
+            </span>
+          </button>
+          <button type="button" id="btnReset" class="btn-reset" aria-label="Reset all form fields">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 101.44-6.48L1 10"/></svg>
+            Reset Form
+          </button>
+        </div>
+
+      </form>
+    </div><!-- /form-column -->
+
+    <!-- ============================================================
+         RESULT PANEL
+         ============================================================ -->
+    <div class="result-column">
+      <div class="sticky-panel">
+        <div class="result-card" role="region" aria-label="Prediction result" aria-live="polite">
+
+          <!-- Card Header -->
+          <div class="result-card__header">
+            <span class="result-card__header-title">Booking Risk Assessment</span>
+            <span class="result-card__model-tag">Gradient Boosting</span>
+          </div>
+
+          <!-- Card Body -->
+          <div class="result-card__body">
+
+            <!-- Empty State -->
+            <div id="emptyState" class="empty-state-content">
+              <div class="empty-state-icon" aria-hidden="true">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+              </div>
+              <p class="empty-state-title">No Prediction Yet</p>
+              <p class="empty-state-text">
+                Complete the form or choose a demo scenario, then click
+                <strong>Analyze Cancellation Risk</strong>.
+              </p>
+            </div>
+
+            <!-- Active Result -->
+            <div id="activeResult" class="active-result">
+
+              <!-- Risk Banner -->
+              <div id="riskBanner" class="risk-banner risk-low" role="status">
+                <div class="risk-banner__level" id="riskLevel">LOW RISK</div>
+                <div class="risk-banner__verdict" id="riskVerdict">Likely Not to Cancel</div>
+              </div>
+
+              <!-- Cancel Probability -->
+              <div class="prob-section">
+                <div class="prob-label-row">
+                  <span class="prob-label-text">Cancellation Probability</span>
+                  <span class="prob-value cancel" id="probCancelVal">0.0%</span>
+                </div>
+                <div class="prob-bar-track" role="progressbar" id="probCancelTrack" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Cancellation probability">
+                  <div class="prob-bar-fill cancel-fill" id="probCancelMeter" style="width:0%;"></div>
+                </div>
+
+                <div class="prob-label-row">
+                  <span class="prob-label-text">Not-Cancellation Probability</span>
+                  <span class="prob-value not-cancel" id="probNotCancelVal">100.0%</span>
+                </div>
+                <div class="prob-bar-track" role="progressbar" id="probNotCancelTrack" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" aria-label="Not-cancellation probability">
+                  <div class="prob-bar-fill not-cancel-fill" id="probNotCancelMeter" style="width:100%;"></div>
+                </div>
+              </div>
+
+              <!-- Context message -->
+              <div class="result-context" id="resultContext">
+                This booking has a relatively low predicted cancellation probability based on patterns learned from historical reservations.
+              </div>
+
+              <!-- Diagnostics -->
+              <div class="diag-grid" aria-label="Model diagnostics">
+                <div class="diag-row">
+                  <span class="diag-row__key">Model Pipeline</span>
+                  <span class="diag-row__val">Tuned Gradient Boosting</span>
+                </div>
+                <div class="diag-row">
+                  <span class="diag-row__key">Processed Features</span>
+                  <span class="diag-row__val">899</span>
+                </div>
+                <div class="diag-row">
+                  <span class="diag-row__key">Leakage Exclusion</span>
+                  <span class="diag-row__val ok">✓ Applied</span>
+                </div>
+              </div>
+
+              <!-- Advisory -->
+              <div class="advisory" role="note">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+                This prediction is based on historical booking patterns and should support,
+                not replace, business decision-making.
+              </div>
+
+            </div><!-- /activeResult -->
+          </div><!-- /result-card__body -->
+        </div><!-- /result-card -->
+      </div><!-- /sticky-panel -->
+    </div><!-- /result-column -->
+
+  </div><!-- /predictor-grid -->
+</main>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
